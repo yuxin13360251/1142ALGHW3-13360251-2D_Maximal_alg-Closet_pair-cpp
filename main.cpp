@@ -4,6 +4,7 @@
 #include <cmath>
 #include <string>
 #include <limits>
+
 using namespace std;
 
 // ==============================
@@ -19,25 +20,32 @@ struct Point {
 // ==============================
 void printPoints(const vector<Point>& pts, const string& title) {
     cout << title << "\n";
+
     for (const auto& p : pts) {
         cout << "(" << p.x << "," << p.y << ") ";
     }
+
     cout << "\n\n";
 }
 
 double distancePoints(const Point& a, const Point& b) {
     double dx = a.x - b.x;
     double dy = a.y - b.y;
+
     return sqrt(dx * dx + dy * dy);
 }
 
 bool cmpX(const Point& a, const Point& b) {
-    if (a.x != b.x) return a.x < b.x;
+    if (a.x != b.x)
+        return a.x < b.x;
+
     return a.y < b.y;
 }
 
 bool cmpY(const Point& a, const Point& b) {
-    if (a.y != b.y) return a.y < b.y;
+    if (a.y != b.y)
+        return a.y < b.y;
+
     return a.x < b.x;
 }
 
@@ -48,38 +56,56 @@ bool cmpY(const Point& a, const Point& b) {
 // 判斷 p1 是否被 p2 凌駕
 // 若 p2.x >= p1.x 且 p2.y >= p1.y，並且至少一項嚴格大於，則 p1 被 p2 凌駕
 bool isDominated(const Point& p1, const Point& p2) {
-    // TODO:
-    // 依照題目中的凌駕定義完成判斷
-    return false; // 請修改
+    return (p2.x >= p1.x &&
+            p2.y >= p1.y &&
+            (p2.x > p1.x || p2.y > p1.y));
 }
 
 // n <= 3 時直接暴力求極點
 vector<Point> bruteForceMaximal(const vector<Point>& S) {
     vector<Point> result;
 
-    // TODO:
-    // 1. 對每個點檢查是否被其他點凌駕
-    // 2. 若沒有被任何點凌駕，則加入 result
-    // 3. 回傳 result
+    // 對每個點檢查是否被其他點凌駕
+    for (int i = 0; i < S.size(); i++) {
+
+        bool dominated = false;
+
+        for (int j = 0; j < S.size(); j++) {
+
+            if (i != j && isDominated(S[i], S[j])) {
+                dominated = true;
+                break;
+            }
+        }
+
+        // 若未被凌駕，加入結果
+        if (!dominated) {
+            result.push_back(S[i]);
+        }
+    }
 
     return result;
 }
 
 // 取得 x 座標中位數
 int getMedianX(const vector<Point>& S) {
+
     vector<int> xs;
+
     for (const auto& p : S) {
         xs.push_back(p.x);
     }
 
-    // TODO:
-    // 1. 將 xs 排序
-    // 2. 取中位數並回傳
-    return 0; // 請修改
+    // 排序
+    sort(xs.begin(), xs.end());
+
+    // 回傳中位數
+    return xs[xs.size() / 2];
 }
 
 // 2D_Maximal 主遞迴
 vector<Point> maximalPoints(const vector<Point>& S) {
+
     int n = S.size();
 
     if (n <= 3) {
@@ -92,9 +118,15 @@ vector<Point> maximalPoints(const vector<Point>& S) {
     // Step 2: 分割成 S_L 與 S_R
     vector<Point> SL, SR;
 
-    // TODO:
     // 將 x <= medianX 的點放入 SL
     // 將 x >  medianX 的點放入 SR
+    for (const auto& p : S) {
+
+        if (p.x <= medianX)
+            SL.push_back(p);
+        else
+            SR.push_back(p);
+    }
 
     // 避免分割失敗造成無限遞迴
     if (SL.size() == S.size() || SR.size() == S.size()) {
@@ -108,22 +140,40 @@ vector<Point> maximalPoints(const vector<Point>& S) {
     // Step 4: 找出 S_R 極點中 y 最大值
     int ymax = -1;
 
-    // TODO:
-    // 從 rightMaximal 中找出最大的 y 值
-    // 若 rightMaximal 為空，要注意處理
+    // 從 rightMaximal 中找最大的 y
+    if (!rightMaximal.empty()) {
+
+        ymax = rightMaximal[0].y;
+
+        for (const auto& p : rightMaximal) {
+            ymax = max(ymax, p.y);
+        }
+    }
 
     // Step 5: 刪除 S_L 中 y < ymax 的點
     vector<Point> filteredLeft;
 
-    // TODO:
-    // 若 rightMaximal 為空，leftMaximal 全保留
-    // 否則只保留 y >= ymax 的左側極點
+    // 若右邊為空，全部保留
+    if (rightMaximal.empty()) {
+        filteredLeft = leftMaximal;
+    }
+    else {
+
+        // 只保留 y >= ymax 的點
+        for (const auto& p : leftMaximal) {
+
+            if (p.y >= ymax) {
+                filteredLeft.push_back(p);
+            }
+        }
+    }
 
     // Step 6: 合併結果
-    vector<Point> result;
+    vector<Point> result = filteredLeft;
 
-    // TODO:
-    // 將 filteredLeft 與 rightMaximal 合併到 result
+    for (const auto& p : rightMaximal) {
+        result.push_back(p);
+    }
 
     return result;
 }
@@ -134,16 +184,33 @@ vector<Point> maximalPoints(const vector<Point>& S) {
 
 // n <= 3 時直接暴力求最近距離
 double bruteForceClosest(const vector<Point>& S) {
-    // TODO:
-    // 1. 若點數小於 2，可回傳很大的值
-    // 2. 兩兩比較所有點距離
-    // 3. 回傳最小距離
 
-    return numeric_limits<double>::infinity(); // 請修改
+    int n = S.size();
+
+    // 少於兩點
+    if (n < 2) {
+        return numeric_limits<double>::infinity();
+    }
+
+    double ans = numeric_limits<double>::infinity();
+
+    // 兩兩比較
+    for (int i = 0; i < n; i++) {
+
+        for (int j = i + 1; j < n; j++) {
+
+            ans = min(ans,
+                      distancePoints(S[i], S[j]));
+        }
+    }
+
+    return ans;
 }
 
 // 2D Closest Pair 遞迴函式
-double closestPairRecursive(vector<Point> Px, vector<Point> Py) {
+double closestPairRecursive(vector<Point> Px,
+                            vector<Point> Py) {
+
     int n = Px.size();
 
     // Base case
@@ -153,7 +220,9 @@ double closestPairRecursive(vector<Point> Px, vector<Point> Py) {
 
     // Step 1: 取 x 中位數
     int mid = n / 2;
+
     Point midPoint = Px[mid];
+
     int L = midPoint.x;
 
     // Step 2: 分割成左半與右半
@@ -162,10 +231,18 @@ double closestPairRecursive(vector<Point> Px, vector<Point> Py) {
 
     vector<Point> PyL, PyR;
 
-    // TODO:
-    // 依照題目中的規則，把 Py 中各點分到 PyL, PyR
-    // S_L : x <= L
-    // S_R : x >  L
+    // 依照規則分配 Py
+    for (const auto& p : Py) {
+
+        if (p.x < L ||
+           (p.x == L && PyL.size() < PxL.size())) {
+
+            PyL.push_back(p);
+        }
+        else {
+            PyR.push_back(p);
+        }
+    }
 
     // 避免分割失敗造成無限遞迴
     if (PxL.empty() || PxR.empty()) {
@@ -181,16 +258,29 @@ double closestPairRecursive(vector<Point> Px, vector<Point> Py) {
     // Step 4: 建立 strip
     vector<Point> strip;
 
-    // TODO:
-    // 將所有滿足 |x - L| < delta 的點放入 strip
-    // 建議從 Py 取，因為 Py 已按 y 排序
+    // 將 |x - L| < delta 的點加入 strip
+    for (const auto& p : Py) {
 
-    // Step 5: 檢查 strip 中可能跨中線的最近點
+        if (abs(p.x - L) < delta) {
+            strip.push_back(p);
+        }
+    }
+
+    // Step 5: 檢查 strip 中跨中線的最近點
     int m = strip.size();
+
     for (int i = 0; i < m; i++) {
-        // TODO:
-        // 對 strip[i] 後面有限個點進行比較
-        // 若找到更小距離，更新 delta
+
+        // 最多檢查後面有限個點
+        for (int j = i + 1;
+             j < m &&
+             (strip[j].y - strip[i].y) < delta;
+             j++) {
+
+            delta = min(delta,
+                        distancePoints(strip[i],
+                                       strip[j]));
+        }
     }
 
     return delta;
@@ -198,19 +288,26 @@ double closestPairRecursive(vector<Point> Px, vector<Point> Py) {
 
 // 封裝主函式：先依 x 與 y 排序，再呼叫遞迴
 double closestPair(vector<Point> S) {
-    // TODO:
-    // 1. 建立 Px 與 Py
-    // 2. Px 依 x 排序
-    // 3. Py 依 y 排序
-    // 4. 呼叫 closestPairRecursive(Px, Py)
 
-    return -1.0; // 請修改
+    // 建立 Px 與 Py
+    vector<Point> Px = S;
+    vector<Point> Py = S;
+
+    // Px 依 x 排序
+    sort(Px.begin(), Px.end(), cmpX);
+
+    // Py 依 y 排序
+    sort(Py.begin(), Py.end(), cmpY);
+
+    // 呼叫遞迴
+    return closestPairRecursive(Px, Py);
 }
 
 // =====================================================
 // 主程式
 // =====================================================
 int main() {
+
     // 測資 1
     vector<Point> case1 = {
         {5,12}, {12,10}, {2,9}, {5,7}, {10,6},
@@ -227,23 +324,33 @@ int main() {
     // Part A: 2D_Maximal
     // ------------------------------
     printPoints(case1, "Input Case 1:");
+
     vector<Point> ans1 = maximalPoints(case1);
+
     sort(ans1.begin(), ans1.end(), cmpX);
-    printPoints(ans1, "Maximal Points of Case 1:");
+
+    printPoints(ans1,
+                "Maximal Points of Case 1:");
 
     printPoints(case2, "Input Case 2:");
+
     vector<Point> ans2 = maximalPoints(case2);
+
     sort(ans2.begin(), ans2.end(), cmpX);
-    printPoints(ans2, "Maximal Points of Case 2:");
+
+    printPoints(ans2,
+                "Maximal Points of Case 2:");
 
     // ------------------------------
     // Part B: 2D_Closest_Pair
     // ------------------------------
     cout << "Closest Pair Distance of Case 1: "
-         << closestPair(case1) << "\n";
+         << closestPair(case1)
+         << "\n";
 
     cout << "Closest Pair Distance of Case 2: "
-         << closestPair(case2) << "\n";
+         << closestPair(case2)
+         << "\n";
 
     return 0;
 }
